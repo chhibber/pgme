@@ -1,9 +1,14 @@
 # Prometheus GPU Metrics Exporter (PGME)
 
-PGME is a GPU Metrics exporters that leverages the nvidai-smi binary.  The primary work for metrics gathering is derived
-from:
+PGME is a GPU Metrics exporters that leverages the nvidai-smi binary.  The initial work and key metric gathering code is
+derived from:
+
  * https://github.com/zhebrak/nvidia_smi_exporter
 
+The exact command nvidia-smi command used:
+```
+nvidia-smi --query-gpu=name,index,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used --format=csv,noheader,nounits
+```
 
 I have added the  following in an attempt to make it a more robust service:
 * configuration via environment variables
@@ -12,31 +17,54 @@ I have added the  following in an attempt to make it a more robust service:
 * graceful shutdown of http server
 * exporter details at http://[[ip of server]]:[[port]/
 * Integration with AWS Codebuild and Publishing to DockerHub or AWS ECR via different buildspec files
+
+Working On:
 * Kubernetes service and helm configuration
 
-## Build
 
-Local Build
+## Building
+
+Local MAC Build (Generates a binary that works on OSX based systems)
 ```
-go build -v nvidia_smi_exporter
+git clone https://github.com/chhibber/pgme.git
+cd pgme
+make build-mac
 ```
-Multistage Docker Build
+
+Local Linux Build (Genrates a binary that works on Linux systems)
 ```
+https://github.com/chhibber/pgme.git
+cd pgme
+make build
+```
+
+Local Docker Build (Generates a docker image)
+```
+https://github.com/chhibber/pgme.git
+cd pgme
 make docker-build IMAGE_REPO_NAME=[[ repo_name/app_name ]] IMAGE_TAG=[[ version info ]]
+
+# Example run
+nvidia-docker run -p 9101:9101 chhibber/pgme
+2018/01/05 21:32:31 Starting the service...
+2018/01/05 21:32:31 - PORT set to 9101.  If  environment variable PORT is not set the default is 9101
+2018/01/05 21:32:31 The service is listening on 9101
+...
 ```
 
-## Run
-* Default port is 9101
+## Running the binary directly
+* The default port is 9101
 
-#### Local
+You can change the port by defining the environment variabl PORT in front of the binary.
 ```
-> PORT=9101 ./nvidia_smi_exporter
+> PORT=9101 ./pgme
 ```
 
-#### Docker
+#### Runnign via Docker (Needed to expose the GPU to the running container)
 nvidia-docker run -p 9101:9101 chhibber/pgme:2017.01
 
-### localhost:9101/metrics
+
+### Available Metrics - http://localhost:9101/metrics
 ```
 temperature_gpu{gpu="TITAN X (Pascal)[0]"} 41
 utilization_gpu{gpu="TITAN X (Pascal)[0]"} 0
@@ -62,11 +90,6 @@ utilization_memory{gpu="TITAN X (Pascal)[3]"} 76
 memory_total{gpu="TITAN X (Pascal)[3]"} 12189
 memory_free{gpu="TITAN X (Pascal)[3]"} 536
 memory_used{gpu="TITAN X (Pascal)[3]"} 11653
-```
-
-### Exact command
-```
-nvidia-smi --query-gpu=name,index,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used --format=csv,noheader,nounits
 ```
 
 ### Prometheus example config
