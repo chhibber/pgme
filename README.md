@@ -5,7 +5,7 @@ derived from:
 
  * https://github.com/zhebrak/nvidia_smi_exporter
 
-The exact command nvidia-smi command used:
+Nvidia-smi command used to gather metrics:
 ```
 nvidia-smi --query-gpu=name,index,temperature.gpu,utilization.gpu,utilization.memory,memory.total,memory.free,memory.used --format=csv,noheader,nounits
 ```

@@ -2,17 +2,10 @@
 # Default values for pgme (Prometheus GPU Metrics Exporter).
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-global:
-  bitfusion:
-    docker:
-      repo: registry.bitfusionflex.com
-      pullSecrets:
-      - name: flex-registry-pull
-
 updateStrategy: RollingUpdate
 
 image:
-  name: flex/pgme
+  name: chhibber/pgme
   tag: latest
   pullPolicy: Always
 

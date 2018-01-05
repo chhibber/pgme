@@ -23,10 +23,6 @@ spec:
             - name: device-plugins
               hostPath:
                 path: /var/lib/kubelet/device-plugins
-        {{- if .Values.global.bitfusion.docker.pullSecrets }}
-            imagePullSecrets:
-            {{ toYaml .Values.global.bitfusion.docker.pullSecrets | indent 8 }}
-        {{- end }}
             containers:
                 - name: {{ .Chart.Name }}
                   image: {{ template "imageURI" . }}
