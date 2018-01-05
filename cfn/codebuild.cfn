@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Codebuild - GPU Metrics exporter for Prometheus
+
+
+Parameters:
+
+    ArtifactName:
+         Description: Name of he Artifact
+         Type: String
+         Default: pgme
+
+    ArtifactPath:
+          Description: Folder in the bucket that will contain the artifact
+          Type: String
+          Default: pgme
+
+    ArtifactBucket:
+        Description: Bucket For Artifacts to be stored
+        Type: String
+
+    BuildSpec:
+        Description: Reference to your buildspc file
+        Type: String
+        Default: buildspec-dockerhub.yml
+
+    DockerHubUser:
+        Description: Only use if you are pushing to Docker Hub
+        Type: String
+        Default: ""
+
+    DockerHubPass:
+        Description: Only use if you are pushing to Docker Hub
+        Type: String
+        NoEcho: true
+        Default: ""
+
+    DockerRegistryUrl:
+        Description: Defaults to dockerhub registry url
+        Type: String
+        Default: registry.hub.docker.com
+
+    AwsDefaultRegion:
+        Description: Only use if you are pushing to Docker Hub
+        Type: String
+        Default: us-east-1
+
+    AwsAccountId:
+        Description: Your AWS Account ID, needed if you are pushing to ECR
+        Type: String
+
+    ImageRepoName:
+        Description: The repository for the docker image
+        Type: String
+
+    ImageTag:
+        Description:  The docker image tag
+        Type: String
+
+    CodeBuildProjectName:
+        Description:  Unique Name for the Codebuild Project
+        Type: String
+        Default: pgme
+
+Resources:
+
+    CodeBuildProject:
+        Type: AWS::CodeBuild::Project
+        Properties:
+            Name: !Ref CodeBuildProjectName
+            ServiceRole: !Ref CodeBuildRole
+            # We will create a binary and store it in S3 as well.  You will need to create the S3 bucket for this.
+            Artifacts:
+                Type: S3
+                # The name of the build output folder
+                Name: !Ref ArtifactName
+                Path: !Ref ArtifactPath
+                NamespaceType: BUILD_ID
+                Location: !Ref ArtifactBucket
+            BadgeEnabled: "true"
+            Environment:
+                Type: LINUX_CONTAINER
+                ComputeType: BUILD_GENERAL1_SMALL
+                Image: aws/codebuild/docker:17.09.0
+                EnvironmentVariables:
+                    - Name: DOCKERHUB_USER
+                      Value: !Ref DockerHubUser
+                    - Name: DOCKERHUB_PASS
+                      Value: !Ref DockerHubPass
+                    - Name: DOCKER_REGISTRY_URL
+                      Value: !Ref DockerRegistryUrl
+                    - Name: AWS_DEFAULT_REGION
+                      Value: !Ref AwsDefaultRegion
+                    - Name:  AWS_ACCOUNT_ID
+                      Value: !Ref AwsAccountId
+                    - Name: IMAGE_REPO_NAME
+                      Value: !Ref ImageRepoName
+                    - Name: IMAGE_TAG
+                      Value: !Ref ImageTag
+            Source:
+                Type: GITHUB
+                Location: https://github.com/chhibber/pgme.git
+                BuildSpec: !Ref BuildSpec
+                Auth:
+                  Type: OAUTH
+            TimeoutInMinutes: 10
+
+
+
+    CodeBuildRole:
+        Type: AWS::IAM::Role
+        Properties:
+          AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              Effect: Allow
+              Principal:
+                Service: codebuild.amazonaws.com
+              Action: sts:AssumeRole
+          Path: /
+          Policies:
+            - PolicyName: CodeBuildAccess
+              PolicyDocument:
+                  Version: "2012-10-17"
+                  Statement:
+                      -
+                        Effect: Allow
+                        Action:
+                        - logs:*
+                        - ec2:CreateNetworkInterface
+                        - ec2:DescribeNetworkInterfaces
+                        - ec2:DeleteNetworkInterface
+                        - ec2:DescribeSubnets
+                        - ec2:DescribeSecurityGroups
+                        - ec2:DescribeDhcpOptions
+                        - ec2:DescribeVpcs
+                        - ec2:CreateNetworkInterfacePermission
+                        - ecr:CreateRepository
+                        - ecr:BatchCheckLayerAvailability
+                        - ecr:CompleteLayerUpload
+                        - ecr:GetAuthorizationToken
+                        - ecr:InitiateLayerUpload
+                        - ecr:PutImage
+                        - ecr:UploadLayerPart
+                        Effect: Allow
+                        Resource: "*"
+                      - Action:
+                        - ssm:GetParameters
+                        Effect: Allow
+                        Resource:
+                          - Fn::Sub:  arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/CodeBuild/*
+                      - Action:
+                        - s3:PutObject
+                        Effect: Allow
+                        Resource:
+                          - Fn::Sub: arn:aws:s3:::${ArtifactBucket}
+                          - Fn::Sub: arn:aws:s3:::${ArtifactBucket}/*

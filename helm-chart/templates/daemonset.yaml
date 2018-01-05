@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+    name: {{ template "pgme.fullname" . }}
+    labels:
+        app: {{ template "pgme.name" . }}
+        chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+
+spec:
+    updateStrategy:
+        type: {{ .Values.updateStrategy }}
+    template:
+        metadata:
+            labels:
+                app: {{ template "pgme.name" . }}
+                release: {{ .Release.Name }}
+        spec:
+            hostNetwork: true
+            hostPID: true
+            volumes:
+            - name: device-plugins
+              hostPath:
+                path: /var/lib/kubelet/device-plugins
+        {{- if .Values.global.bitfusion.docker.pullSecrets }}
+            imagePullSecrets:
+            {{ toYaml .Values.global.bitfusion.docker.pullSecrets | indent 8 }}
+        {{- end }}
+            containers:
+                - name: {{ .Chart.Name }}
+                  image: {{ template "imageURI" . }}
+                  imagePullPolicy: {{ .Values.image.pullPolicy }}
+                  securityContext:
+                    privileged: true
+                  command: ["./pgme"]
+

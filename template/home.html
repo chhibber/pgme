@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{.PageTitle}}</title>
+</head>
+
+
+<body>
+    <h3>{{.PageTitle}}</h3>
+    <p>Metrics Export Link: <a href="metrics">Metrics</a></p>
+    <p>This exporter is used to expose the following GPU metrics for each GPU</p>
+    <ul>
+        {{range $index, $M :=.Metrics}}
+            <li>{{$M}}</li>
+        {{end}}
+    </ul>
+
+
+<h4>Requirements</h4>
+<ul>
+    <li>nvidia-smi</li>
+</ul>
+
+<h4>Build Information</h4>
+<ul>
+    {{range $key, $value := .VersionInfo}}
+    <li>{{ $key }}: {{ $value }}</li>
+    {{ end }}
+</ul>
+
+
+</body>
+</html>

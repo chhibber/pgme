@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Prometheus GPU Metrics Exporter (pgme)
+name: pgme
+version: 0.1.0
